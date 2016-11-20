@@ -102,4 +102,4 @@ if __name__ == '__main__':
     exclfile = path.join(script_dir, 'exclamations.json')
     thefacts.load(factfile, exclfile)
 
-    app.run(debug=True, host='0.0.0.0', port=8080, ssl_context=(cert_path, key_path))
+    app.run(debug=True, host='0.0.0.0', port=443, ssl_context=(cert_path, key_path))
