@@ -7,6 +7,8 @@ from os import path, environ
 import random
 import json
 
+script_dir = path.dirname(__file__)
+
 app = Flask(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -14,7 +16,9 @@ login_manager.init_app(app)
 app.secret_key      = environ.get("CATFACTS_KEY", "K2ptdnpfjLnFrA2c")
 catfact_user        = environ.get("CATFACTS_USER", "catdaddy")
 catfact_pass        = environ.get("CATFACTS_PASS", "fxVVC8GQNTvUbeJn")
-secret_bonus_fact            = environ.get("CATFACTS_BONUS_FACT")
+secret_bonus_fact   = environ.get("CATFACTS_BONUS_FACT")
+cert_path           = environ.get("CERT_PATH", path.join(script_dir, "certs/localhost.cert"))
+key_path            = environ.get("KEY_PATH", path.join(script_dir, "certs/localhost.key"))
 
 class LonelyUser(UserMixin):
     id = catfact_pass
@@ -94,7 +98,8 @@ def hello_world():
             )
 
 if __name__ == '__main__':
-    factfile = path.join(path.dirname(__file__), 'catfacts.json')
-    exclfile = path.join(path.dirname(__file__), 'exclamations.json')
+    factfile = path.join(script_dir, 'catfacts.json')
+    exclfile = path.join(script_dir, 'exclamations.json')
     thefacts.load(factfile, exclfile)
-    app.run(debug=True,host='0.0.0.0', port=80)
+
+    app.run(debug=True, host='0.0.0.0', port=8080, ssl_context=(cert_path, key_path))
