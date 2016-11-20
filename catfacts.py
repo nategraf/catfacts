@@ -1,29 +1,100 @@
-from flask import Flask
-from os import path
+from flask import Flask, render_template, flash, redirect
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from flask_wtf import FlaskForm
+from wtforms import TextField, PasswordField
+from wtforms.validators import DataRequired
+from os import path, environ
 import random
 import json
+
 app = Flask(__name__)
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+app.secret_key      = environ.get("CATFACTS_KEY", "K2ptdnpfjLnFrA2c")
+catfact_user        = environ.get("CATFACTS_USER", "catdaddy")
+catfact_pass        = environ.get("CATFACTS_PASS", "fxVVC8GQNTvUbeJn")
+secret_bonus_fact            = environ.get("CATFACTS_BONUS_FACT")
+
+class LonelyUser(UserMixin):
+    id = catfact_pass
+
+lonely_user = LonelyUser()
+
+class LoginForm(FlaskForm):
+    user = TextField('Username', validators=[DataRequired()])
+    passwd = PasswordField('Password', validators=[DataRequired()])
+
+@login_manager.user_loader
+def load_user(user_id):
+    if user_id == lonely_user.get_id():
+        return lonely_user
+    else:
+        return None
 
 class CatFacts:
-    def __init__(self, filename=None):
+    def __init__(self, factfile=None, exclfile=None):
         self.facts = []
-        if filename:
-            self.load(filename)
+        self.exclamations = []
 
-    def load(self, filename):
-        with open(filename) as f:
-            self.facts = json.load(f)
+        self.load(factfile, exclfile)
+
+    def load(self, factfile, exclfile):
+        if factfile:
+            with open(factfile) as f:
+                self.facts = list(enumerate(json.load(f)))
+
+        if exclfile:
+            with open(exclfile) as f:
+                self.exclamations = list(json.load(f))
 
     def random(self):
-        return random.choice(self.facts)
+        num, fact = random.choice(self.facts)
+        exclamation = random.choice(self.exclamations)
+        return num, fact, exclamation
 
-THEFACTS = CatFacts()
+thefacts = CatFacts()
+
+@app.route('/login', methods=('POST',))
+def login():
+    form = LoginForm()
+    sucess = False
+    if form.validate_on_submit():
+        if form.user.data == catfact_user and form.passwd.data == catfact_pass:
+            login_user(lonely_user)
+            sucess = True
+        else:
+            flash('Credentials rejected: You are not a true Cat Daddy')
+    else:
+        flash('Please enter your credentials')
+
+    if sucess:
+        return redirect("#")
+    else:
+        return redirect("#login")
+
+@app.route('/logout', methods=('GET',))
+@login_required
+def logout():
+    logout_user()
+    return redirect('#')
+
 
 @app.route('/')
 def hello_world():
-    return THEFACTS.random()
+    num, fact, exclamation = thefacts.random()
+    form = LoginForm()
+    return render_template(
+            'fact.html', 
+            fact=fact,
+            num=num,
+            exclamation=exclamation,
+            secret_bonus_fact=secret_bonus_fact,
+            login_form=LoginForm()
+            )
 
 if __name__ == '__main__':
     factfile = path.join(path.dirname(__file__), 'catfacts.json')
-    THEFACTS.load(factfile)
+    exclfile = path.join(path.dirname(__file__), 'exclamations.json')
+    thefacts.load(factfile, exclfile)
     app.run(debug=True,host='0.0.0.0', port=80)
