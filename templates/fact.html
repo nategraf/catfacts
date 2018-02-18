@@ -64,7 +64,8 @@
         <div class="modal-dialog">
             <div class="loginmodal-container">
                 <h1>Login</h1><br>
-                <form method="POST" action="/login">
+                <form method="POST" action="/login">   
+                    {{ login_form.csrf_token }}
                     {{ login_form.user(placeholder="Username") }}
                     {{ login_form.passwd(placeholder="Pawsword") }}
                     <input type="submit" name="login" class="login loginmodal-submit btn btn-default" value="Login">
